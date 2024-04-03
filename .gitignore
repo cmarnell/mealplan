@@ -1,0 +1,3 @@
+.streamlit/gs_credentials.json
+.streamlit/secrets.toml
+__pycache__/get_food.cpython-310.pyc
