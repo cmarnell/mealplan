@@ -1,0 +1,5 @@
+pandas==1.5.3
+streamlit==1.32.0
+gspread==5.11.1
+google-auth==2.17.2
+st_pages==0.4.5
