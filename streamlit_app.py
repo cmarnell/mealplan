@@ -40,6 +40,8 @@ choices_df = get_food.getSheetasDataframe("options")
 
 testing_email = 'test@email.com'
 
+st.text(st.experimental_user["email"])
+
 # TODO change this to st.experimental_user
 # If this user is not me, just show them the meal plan
 if testing_email != 'test@email.com':
