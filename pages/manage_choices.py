@@ -6,6 +6,7 @@ if not st.session_state['loggedin']:
 
 elif st.session_state['loggedin']:
     choices_df = get_food.getSheetasDataframe("options")
+    choices_df = choices_df[choices_df['meal'] != ''].sort_values("meal")
 
     sh = get_food.getAuth()
 
@@ -26,7 +27,9 @@ elif st.session_state['loggedin']:
             st.dataframe(choices_df, 
                 column_config={"meal": "Dinner Option", 
                     "source": st.column_config.LinkColumn("Source")
-                })
+                },
+                use_container_width=True,
+                hide_index=True)
 
     else:
 
@@ -35,7 +38,7 @@ elif st.session_state['loggedin']:
         if len(entered_tags) > 0:
             choices_filtered_df = choices_df[choices_df['tags'].str.contains(entered_tags)]
         else:
-            choices_filtered_df = choices_df[choices_df['meal'] != '']
+            choices_filtered_df = choices_df
 
         st.dataframe(choices_filtered_df[['meal', 'source']], 
             column_config={
