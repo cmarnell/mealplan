@@ -12,7 +12,7 @@ elif st.session_state['loggedin']:
 
     worksheet = sh.worksheet('options')
 
-    if st.session_state["email"] == 'cmarnell@gmail.com':
+    if st.session_state["userrole"] == 'admin':
         with st.form("my_form", clear_on_submit=True):
             sMeal = st.text_input("Enter Meal", value='')
             sTags = st.text_input("Tags", value='')
@@ -24,12 +24,12 @@ elif st.session_state['loggedin']:
                 worksheet.append_row([sMeal, sTags, sSource], table_range="A1:C1", value_input_option="USER_ENTERED")
                 st.text(f"{sMeal} added")
 
-            st.dataframe(choices_df, 
-                column_config={"meal": "Dinner Option", 
-                    "source": st.column_config.LinkColumn("Source")
-                },
-                use_container_width=True,
-                hide_index=True)
+        st.dataframe(choices_df, 
+            column_config={"meal": "Dinner Option", 
+                "source": st.column_config.LinkColumn("Source")
+            },
+            use_container_width=True,
+            hide_index=True)
 
     else:
 

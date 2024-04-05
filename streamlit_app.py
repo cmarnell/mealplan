@@ -14,6 +14,18 @@ show_pages(
     ]
 )
 
+# Get some session variables set
+actual_password = "pass"
+if 'loggedin' not in st.session_state:
+	st.session_state['loggedin'] = False
+if 'userrole' not in st.session_state:
+	st.session_state['userrole'] = 'other'  
+
+# If there is a logged in user, show who in the sidebar
+with st.sidebar:
+    if st.session_state['loggedin']:
+        st.text(f'Welcome {st.session_state["email"]}')
+
 # Do some work with dates
 today = date.today()
 dtMonday = today - timedelta(days = today.weekday())
@@ -27,11 +39,7 @@ dtSunday = dtMonday + timedelta(6)
 # Create an empty container
 placeholder = st.empty()
 
-# actual_email = "cmarnell@gmail.com"
-actual_password = "sturbridge"
-if 'loggedin' not in st.session_state:
-	st.session_state['loggedin'] = False
-
+# Create a login form
 if not st.session_state['loggedin']:
     # Insert a form in the container
     with placeholder.form("login"):
@@ -40,16 +48,17 @@ if not st.session_state['loggedin']:
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("Login")
 
-    # Comment out the next 3 lines for testing
     if submit and password != actual_password:
         st.error("Login failed")
         
     elif submit and password == actual_password:
-    # if submit:
         users_df = get_food.getSheetasDataframe("users")
         new_email = re.sub(r"\.(?=.*?@gmail\.com)", "", email).lower()
-        
+
+        user_level = users_df[users_df['email'] == new_email]['role'].values[0]
         count = len(users_df[users_df['email'] == new_email])
+
+        st.session_state['userrole'] = user_level
 
         if count == 0:
             st.error("Login failed")
@@ -61,19 +70,24 @@ if not st.session_state['loggedin']:
             st.session_state['email'] = email
 
 elif st.session_state['loggedin']:
-    st.text(f'Welcome: {st.session_state["email"]}')
     
     placeholder.empty()
 
     sh = get_food.getAuth()
-    worksheet = sh.worksheet('history')
+    history_worksheet = sh.worksheet('history')
 
     this_week = [dtMonday.strftime('%m/%d/%Y'), dtTuesday.strftime('%m/%d/%Y'), dtWednesday.strftime('%m/%d/%Y'), dtThursday.strftime('%m/%d/%Y'), dtFriday.strftime('%m/%d/%Y'), dtSaturday.strftime('%m/%d/%Y'), dtSunday.strftime('%m/%d/%Y')]
 
     history_df = get_food.getSheetasDataframe("history")
     choices_df = get_food.getSheetasDataframe("options").sort_values(by=["meal"])
+    requests_df = get_food.getSheetasDataframe("requests")
 
-    if st.session_state["email"] == 'cmarnell@gmail.com':
+    if st.session_state['userrole'] == 'admin':
+        # Show any meal requests
+        if len(requests_df) > 0:
+            st.markdown("Current Requests")
+            st.dataframe(requests_df)
+
         # return values from history_df if they already exist
         vMonday = history_df[history_df['date'] == dtMonday.strftime('%m/%d/%Y')]['meal']
         vTuesday = history_df[history_df['date'] == dtTuesday.strftime('%m/%d/%Y')]['meal']
@@ -105,7 +119,7 @@ elif st.session_state['loggedin']:
 
             if submitted:
                 meal_list = [[dtMonday, sMonday], [dtTuesday, sTuesday], [dtWednesday, sWednesday], [dtThursday, sThursday], [dtFriday, sFriday], [dtSaturday, sSaturday], [dtSunday, sSunday]]
-                worksheet.clear()
+                history_worksheet.clear()
                 for meal in meal_list:
                     # Only do this if a meal has been selected
                     if meal[1]:
@@ -115,20 +129,47 @@ elif st.session_state['loggedin']:
                         if len(df.index) < 1:
                             st.text(f"adding {meal[0].strftime('%m/%d/%Y')} {meal[1]}")
                             history_df.loc[len(history_df.index)+1] = [meal[0].strftime('%m/%d/%Y'), meal[1]]
-                            # worksheet.append_row([meal[0].strftime('%m/%d/%Y'), meal[1]], table_range="A1:B1", value_input_option="USER_ENTERED")
                         else:
+                            # update if there is already a meal for the day
                             st.text(f"updating {meal[0].strftime('%m/%d/%Y')} {meal[1]}")
                             history_df.loc[history_df['date'] == meal[0].strftime('%m/%d/%Y'), 'meal'] = meal[1]
                         
                         # rewrite the datasheet with a new version once we are done
                         history_df = history_df.sort_values(by='date')
-                        worksheet.update([history_df.columns.values.tolist()] + history_df.values.tolist())
+                        history_worksheet.update([history_df.columns.values.tolist()] + history_df.values.tolist())
 
                 st.text(f'Monday: {sMonday}\nTuesday: {sTuesday}\nWednesday: {sWednesday}\nThursday: {sThursday}\nFriday: {sFriday}\nSaturday: {sSaturday}\nSunday: {sSunday}')
 
 #  Display the below if it isn't me logging in
-    if st.session_state["email"] != 'cmarnell@gmail.com':
+    if st.session_state['userrole'] != 'admin':
         mask = history_df['date'].isin(this_week)
         this_week_df = history_df[mask]
         st.markdown("Planned meals for this week:")
-        st.dataframe(this_week_df, hide_index=True)                
+        st.dataframe(this_week_df, hide_index=True)  
+
+        request_worksheet = sh.worksheet('requests')
+
+        with st.form("meal_requests", clear_on_submit=True):
+            request_date = date.today()
+            who = st.session_state["email"]
+            meal = st.selectbox("Request dinner for this week", choices_df.meal.unique())
+
+            submitted = st.form_submit_button("Submit")
+
+            if submitted:
+                request_worksheet.clear()
+                requests_df.loc[len(requests_df.index)+1] = [who, meal, request_date] # .strftime('%m/%d/%Y')
+                
+                requests_df['request_date'] = pd.to_datetime(requests_df['request_date'], format='%Y-%m-%d') # format='%m/%d/%Y')
+                requests_df = requests_df[requests_df['request_date'].dt.date > date.today() - timedelta(14)]
+                requests_df['request_date'] = requests_df['request_date'].dt.strftime('%Y-%m-%d')
+
+                requests_df = requests_df.sort_values(by='request_date')
+                
+                request_worksheet.update([requests_df.columns.values.tolist()] + requests_df.values.tolist())
+
+
+            # requests_df['request_date'] = pd.to_datetime(requests_df['request_date'], format='%m/%d/%Y')
+
+        st.markdown("Current Requests")
+        st.dataframe(requests_df)
