@@ -24,6 +24,9 @@ elif st.session_state['loggedin']:
                 worksheet.append_row([sMeal, sTags, sSource], table_range="A1:C1", value_input_option="USER_ENTERED")
                 st.text(f"{sMeal} added")
 
+                choices_df = get_food.getSheetasDataframe("options")
+                choices_df = choices_df[choices_df['meal'] != ''].sort_values("meal")
+
         st.dataframe(choices_df, 
             column_config={"meal": "Dinner Option", 
                 "source": st.column_config.LinkColumn("Source")
