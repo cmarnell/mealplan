@@ -172,4 +172,4 @@ elif st.session_state['loggedin']:
             # requests_df['request_date'] = pd.to_datetime(requests_df['request_date'], format='%m/%d/%Y')
 
         st.markdown("Current Requests")
-        st.dataframe(requests_df)
+        st.dataframe(requests_df, hide_index=True)
