@@ -1,28 +1,46 @@
 import streamlit as st
 import get_food
 
-choices_df = get_food.getSheetasDataframe("options")
+if not st.session_state['loggedin']:
+    st.error("Please return to the meal plan page and log in")
 
-sh = get_food.getAuth()
+elif st.session_state['loggedin']:
+    choices_df = get_food.getSheetasDataframe("options")
 
-worksheet = sh.worksheet('options')
+    sh = get_food.getAuth()
 
-with st.form("my_form", clear_on_submit=True):
-    sMeal = st.text_input("Enter Meal", value='')
-    sTags = st.text_input("Tags", value='')
-    sSource = st.text_input("Enter Source", value='')
+    worksheet = sh.worksheet('options')
 
-    submitted = st.form_submit_button("Submit")
+    if st.session_state["email"] == 'cmarnell@gmail.com':
+        with st.form("my_form", clear_on_submit=True):
+            sMeal = st.text_input("Enter Meal", value='')
+            sTags = st.text_input("Tags", value='')
+            sSource = st.text_input("Enter Source", value='')
 
-    if submitted:
-        worksheet.append_row([sMeal, sTags, sSource], table_range="A1:C1", value_input_option="USER_ENTERED")
-        st.text(f"{sMeal} added")
+            submitted = st.form_submit_button("Submit")
 
-st.dataframe(choices_df)        
+            if submitted:
+                worksheet.append_row([sMeal, sTags, sSource], table_range="A1:C1", value_input_option="USER_ENTERED")
+                st.text(f"{sMeal} added")
 
+            st.dataframe(choices_df, 
+                column_config={"meal": "Dinner Option", 
+                    "source": st.column_config.LinkColumn("Source")
+                })
 
-# # Get updated dividend df
-# update_dividends = st.button("Update Dividend Data", type="primary")
-# if update_dividends:
-#     with st.spinner('Getting updated dividend data...'):
-#         st.session_state['dividends_df'] = get_food.getDividendsDF(st.session_state['dividend_val'])
+    else:
+
+        entered_tags = st.text_input("What kind of meal are you looking for? (only enter one search term at a time)").lower()
+
+        if len(entered_tags) > 0:
+            choices_filtered_df = choices_df[choices_df['tags'].str.contains(entered_tags)]
+        else:
+            choices_filtered_df = choices_df[choices_df['meal'] != '']
+
+        st.dataframe(choices_filtered_df[['meal', 'source']], 
+            column_config={
+                "meal": st.column_config.TextColumn("Dinner Option", width = "small"), 
+                "source": st.column_config.LinkColumn("Source", width = "Large")
+            },
+            use_container_width=True,
+            hide_index=True)
