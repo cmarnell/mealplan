@@ -73,12 +73,6 @@ elif st.session_state['loggedin']:
     history_df = get_food.getSheetasDataframe("history")
     choices_df = get_food.getSheetasDataframe("options").sort_values(by=["meal"])
 
-    if st.session_state["email"] != 'cmarnell@gmail.com':
-        mask = history_df['date'].isin(this_week)
-        this_week_df = history_df[mask]
-        st.markdown("Planned meals for this week:")
-        st.dataframe(this_week_df, hide_index=True)
-
     if st.session_state["email"] == 'cmarnell@gmail.com':
         # return values from history_df if they already exist
         vMonday = history_df[history_df['date'] == dtMonday.strftime('%m/%d/%Y')]['meal']
@@ -131,3 +125,10 @@ elif st.session_state['loggedin']:
                         worksheet.update([history_df.columns.values.tolist()] + history_df.values.tolist())
 
                 st.text(f'Monday: {sMonday}\nTuesday: {sTuesday}\nWednesday: {sWednesday}\nThursday: {sThursday}\nFriday: {sFriday}\nSaturday: {sSaturday}\nSunday: {sSunday}')
+
+#  Display the below if it isn't me logging in
+    if st.session_state["email"] != 'cmarnell@gmail.com':
+        mask = history_df['date'].isin(this_week)
+        this_week_df = history_df[mask]
+        st.markdown("Planned meals for this week:")
+        st.dataframe(this_week_df, hide_index=True)                
