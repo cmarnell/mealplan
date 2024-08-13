@@ -1,0 +1,8 @@
+add new dinner options
+allow to search dinner options by tag
+	by title?
+save to csv
+	overwrite with existing dates
+	append to dataframe
+	overwrite csv every time
+	
